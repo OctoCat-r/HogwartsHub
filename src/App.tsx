@@ -1,4 +1,4 @@
-import React from "react";
+import { Toaster } from "@/components/ui/toaster";
 import { Route, Routes } from "react-router-dom";
 import "./global.css";
 
@@ -22,6 +22,7 @@ const App = () => {
           <Route index element={<Home />} />
         </Route>
       </Routes>
+      <Toaster />
     </main>
   );
 };

@@ -1,11 +1,11 @@
 import * as z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useToast } from "@/components/ui/use-toast";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -15,13 +15,25 @@ import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
 import { SignUpValidation } from "@/lib/validations";
 import Loader from "@/components/shared/Loader";
-import { createUserAccount } from "@/lib/appwrite/api";
+// import { createUserAccount } from "@/lib/appwrite/api";
+import {
+  useCreateUserAccount,
+  useSignInAccount,
+} from "@/lib/react-query/queriesAndMutations";
 
 // const formSchema = z.object({
 //   username: z.string().min(2).max(50),
 // });
 const SignUp = () => {
   const isLoading = false;
+  const { toast } = useToast();
+  const navigate = useNavigate();
+
+  const { mutateAsync: createUserAccount, isLoading: isCreatingAccount } =
+    useCreateUserAccount();
+  const { mutateAsync: signInAccount, isLoading: isSigningInUser } =
+    useSignInAccount();
+
   const form = useForm<z.infer<typeof SignUpValidation>>({
     resolver: zodResolver(SignUpValidation),
     defaultValues: {
@@ -33,17 +45,29 @@ const SignUp = () => {
   });
 
   // 2. Define a submit handler.
-  async function onSubmit(values: z.infer<typeof SignUpValidation>) {
-    const newUser = await createUserAccount(values);
+  async function onSubmit(user: z.infer<typeof SignUpValidation>) {
+    const newUser = await createUserAccount(user);
 
     console.log(newUser);
 
-    // if (!newUser) {
-    //   toast({ title: "Sign up failed. Please try again." });
+    if (!newUser) {
+      toast({ title: "Sign up failed. Please try again." });
 
-    //   return;
-    // }
-    console.log(values);
+      return;
+    }
+
+    const session = await signInAccount({
+      email: user.email,
+      password: user.password,
+    });
+    if (!session) {
+      toast({ title: "Something went wrong. Please login your new account" });
+
+      navigate("/sign-in");
+
+      return;
+    }
+    console.log(user);
   }
   return (
     <Form {...form}>
